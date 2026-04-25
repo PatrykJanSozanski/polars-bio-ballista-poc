@@ -1,6 +1,7 @@
 use anyhow::Result;
-use ballista_executor::executor_process::{ExecutorProcessConfig, start_executor_process};
+use ballista_executor::executor_process::{start_executor_process, ExecutorProcessConfig};
 use clap::Parser;
+use polars_bio_ballista_poc::codec::PolarsBioBallistaLogicalCodec;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -39,6 +40,7 @@ async fn main() -> Result<()> {
         scheduler_port: args.scheduler_port,
         concurrent_tasks: args.concurrent_tasks,
         work_dir: Some(args.work_dir.display().to_string()),
+        override_logical_codec: Some(Arc::new(PolarsBioBallistaLogicalCodec::default())),
         ..Default::default()
     };
 

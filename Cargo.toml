@@ -2,13 +2,16 @@
 name = "polars-bio-ballista-poc"
 version = "0.1.0"
 edition = "2021"
-default-run = "query"
 
 [dependencies]
 anyhow = "1"
+async-trait = "0.1"
 ballista = { version = "52.0.0", default-features = false }
+ballista-core = { version = "52.0.0", default-features = false }
 ballista-executor = { version = "52.0.0", default-features = false }
 ballista-scheduler = { version = "52.0.0", default-features = false }
 clap = { version = "4.5", features = ["derive"] }
-datafusion = "52"
-tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal", "sync", "time"] }
+datafusion = "52.5.0"
+datafusion-bio-function-ranges = { git = "https://github.com/biodatageeks/datafusion-bio-functions.git", branch = "feat/bump-datafusion-52" }
+datafusion-proto = "52.5.0"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

@@ -1,11 +1,13 @@
 use crate::fixtures::interval_schema;
 use datafusion::catalog::{TableFunctionImpl, TableProvider};
-use datafusion::common::{Result, ScalarValue, plan_err};
+use datafusion::common::{plan_err, Result, ScalarValue};
 use datafusion::datasource::file_format::parquet::ParquetFormat;
-use datafusion::datasource::listing::{ListingOptions, ListingTable, ListingTableConfig, ListingTableUrl};
-use datafusion::datasource::{ViewTable, provider_as_source};
+use datafusion::datasource::listing::{
+    ListingOptions, ListingTable, ListingTableConfig, ListingTableUrl,
+};
+use datafusion::datasource::{provider_as_source, ViewTable};
 use datafusion::logical_expr::{Expr, JoinType, LogicalPlan, LogicalPlanBuilder};
-use datafusion::prelude::{SessionContext, col};
+use datafusion::prelude::{col, SessionContext};
 use std::sync::Arc;
 
 #[derive(Debug)]

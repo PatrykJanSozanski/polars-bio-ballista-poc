@@ -25,18 +25,18 @@ echo "building POC binaries"
 cargo build --bins
 
 echo "starting local Ballista cluster"
-./target/debug/scheduler --bind-port 50050 >"$LOG_DIR/scheduler.log" 2>&1 &
+./target/debug/scheduler --bind-port 50050 >"$LOG_DIR/e1-scheduler.log" 2>&1 &
 scheduler_pid=$!
 sleep 2
 
-./target/debug/executor --port 50051 --grpc-port 50052 --work-dir target/ballista/executor-1 >"$LOG_DIR/executor-1.log" 2>&1 &
+./target/debug/executor --port 50051 --grpc-port 50052 --work-dir target/ballista/e1-executor-1 >"$LOG_DIR/e1-executor-1.log" 2>&1 &
 executor1_pid=$!
 
-./target/debug/executor --port 50061 --grpc-port 50062 --work-dir target/ballista/executor-2 >"$LOG_DIR/executor-2.log" 2>&1 &
+./target/debug/executor --port 50061 --grpc-port 50062 --work-dir target/ballista/e1-executor-2 >"$LOG_DIR/e1-executor-2.log" 2>&1 &
 executor2_pid=$!
 sleep 4
 
-echo "running overlap_demo query"
-./target/debug/query --fixtures-dir "$ROOT/fixtures/generated"
+echo "running E1 overlap_demo query"
+./target/debug/query --provider-mode e1 --limit 10
 
 echo "cluster logs written to $LOG_DIR"
