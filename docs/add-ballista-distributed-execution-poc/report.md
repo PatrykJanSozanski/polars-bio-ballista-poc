@@ -19,6 +19,50 @@ Topology and data scope:
 - 2 executors
 - local Parquet fixtures only
 
+## Validated DF53 baseline
+
+This POC was revalidated on 2026-05-19 against the newer `polars-bio`
+DataFusion 53 line.
+
+Runtime sources:
+
+- `polars-bio` branch `upgrade-datafusion-53-1`
+- `polars-bio` commit `bfc67d3d822040ddb2dfa949010dbb7ea00968cf`
+- DataFusion `53.1.0`
+- Arrow `58.3.0`
+- `datafusion-bio-function-ranges`
+  `35a6a6e41c6212c8e031d3beb7f917591e589475`
+- Apache Ballista from `apache/datafusion-ballista` branch `main`
+- Ballista commit `38ef6004f64b5aa14a5d8e8765d94f716b796fbc`
+  (crate version `53.0.0`)
+
+The POC uses the `polars-bio` branch as the source of the function contract:
+its Cargo pins define the DataFusion/Arrow/function-crate baseline, and its
+`src/operation.rs` remains the reference for overlap behavior. The POC still
+keeps a local serializable adapter because the upstream provider cannot be
+serialized directly by Ballista.
+
+Build note:
+
+- Building Ballista directly from GitHub requires `protoc`, because
+  `ballista-core` generates protobuf bindings in its build script.
+
+Validated commands:
+
+```bash
+cargo check --bins
+./scripts/run-local-e1.sh
+./scripts/run-local-compare-overlap-modes.sh
+./scripts/run-local-e3.sh
+```
+
+Observed result:
+
+- E1 returned the expected 3 toy overlap rows.
+- E2, E4-A and E5-B returned identical tables through one local cluster.
+- E3 returned the expected serialization error:
+  `LogicalExtensionCodec is not provided`.
+
 ## Verified runtime behavior
 
 ### E1
@@ -31,7 +75,10 @@ Topology and data scope:
 
 - overlap query executes end-to-end through scheduler and executors
 - custom provider is serialized via `PolarsBioBallistaLogicalCodec`
-- expected result: 20 rows in default run
+- expected display result: 20 rows in default run
+- on DF53, the runner also truncates collected batches before printing, because
+  the remote Ballista path did not reliably preserve the client-side display
+  limit for this custom-provider plan
 
 ### E3
 
@@ -80,6 +127,7 @@ Result:
 
 - E2 is the current working integration layer in this repository
 - E2 is the safe fallback architecture as long as upstream remains unchanged
+- This remains true for the DataFusion 53.1.0 / Ballista main validation.
 
 ### Function-level mapping
 
@@ -166,6 +214,12 @@ Expected result:
 - success message confirming identical tables
 - comparison artifacts written to `target/ballista-compare/`
 
+DF53 validation result:
+
+```text
+[COMPARE] SUCCESS: E2, E4-A and E5-B returned identical tables.
+```
+
 ## Production guidance
 
 Recommended path:
@@ -180,6 +234,8 @@ Operational conclusion:
 - no Ballista fork is required
 - distributed overlap is viable for this slice
 - the main upstream gap is provider serialization ownership, not Ballista itself
+- the same conclusion still holds after moving the POC to DataFusion `53.1.0`
+  and Ballista `main`
 
 ## Canonical documentation set
 

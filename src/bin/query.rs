@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use ballista::prelude::{SessionConfigExt, SessionContextExt};
 use clap::{Parser, ValueEnum};
+use datafusion::arrow::record_batch::RecordBatch;
 use datafusion::arrow::util::pretty::pretty_format_batches;
 use datafusion::execution::SessionStateBuilder;
 use datafusion::prelude::{SessionConfig, SessionContext};
@@ -124,7 +125,34 @@ async fn main() -> Result<()> {
 
     println!("collecting result batches");
     let batches = df.collect().await?;
-    println!("{}", pretty_format_batches(&batches)?);
+    let display_batches = if args.limit == 0 {
+        batches
+    } else {
+        limit_batches_for_display(batches, args.limit)
+    };
+    println!("{}", pretty_format_batches(&display_batches)?);
 
     Ok(())
+}
+
+fn limit_batches_for_display(batches: Vec<RecordBatch>, limit: usize) -> Vec<RecordBatch> {
+    let mut remaining = limit;
+    let mut output = Vec::new();
+
+    for batch in batches {
+        if remaining == 0 {
+            break;
+        }
+
+        let rows = batch.num_rows();
+        if rows <= remaining {
+            remaining -= rows;
+            output.push(batch);
+        } else {
+            output.push(batch.slice(0, remaining));
+            break;
+        }
+    }
+
+    output
 }

@@ -10,10 +10,26 @@ Ballistę przy minimalnych zmianach w stosunku do istniejącego kodu upstream.
 
 ## Stos technologiczny
 
-- Apache Ballista `52.0.0`
-- DataFusion `52.5.0`
-- `datafusion-bio-function-ranges` branch `feat/bump-datafusion-52`
+- Apache Ballista z `apache/datafusion-ballista` branch `main`
+  (`38ef6004f64b5aa14a5d8e8765d94f716b796fbc`, crate `53.0.0`)
+- DataFusion `53.1.0`
+- Arrow `58.3.0`
+- `polars-bio` jako źródło kontraktu funkcji: branch
+  `upgrade-datafusion-53-1`
+  (`bfc67d3d822040ddb2dfa949010dbb7ea00968cf`, wersja `0.31.0`)
+- `datafusion-bio-function-ranges` rev
+  `35a6a6e41c6212c8e031d3beb7f917591e589475`, zgodny z powyższym
+  branchem `polars-bio`
 - lokalny klaster: `1 scheduler + 2 executors`
+
+POC traktuje branch `polars-bio/upgrade-datafusion-53-1` jako źródło
+kontraktu funkcji: z niego pochodzą piny DataFusion/Arrow i rewizja
+`datafusion-bio-function-ranges`, a `src/operation.rs` pozostaje punktem
+odniesienia dla mapowania overlap.
+
+Uwaga buildowa: Ballista budowana bezpośrednio z GitHuba generuje protobufy
+w build script, więc lokalnie wymagany jest `protoc` (np. pakiet
+`protobuf` z Homebrew).
 
 ## Layout repo
 
@@ -79,6 +95,16 @@ przechowywane w `fixtures/polars-bio/`. Ścieżki można nadpisać:
 
 ## Wyniki
 
+Aktualna walidacja została wykonana 2026-05-19 na baseline DF53/Ballista main.
+Potwierdzone komendy:
+
+```bash
+cargo check --bins
+./scripts/run-local-e1.sh
+./scripts/run-local-compare-overlap-modes.sh
+./scripts/run-local-e3.sh
+```
+
 E2, E4-A i E5-B zwracają ten sam wynik tabelaryczny dla tych samych plików
 Parquet z `polars-bio`. Zbiorczo weryfikuje to `run-local-compare-overlap-modes.sh`.
 
@@ -101,6 +127,10 @@ E3 pozostaje kontrolą negatywną i kończy się oczekiwanym błędem:
 Error: Internal error: failed to serialize logical plan:
   NotImplemented("LogicalExtensionCodec is not provided")
 ```
+
+Na DF53 zdalna ścieżka Ballisty nadal nie pozwala użyć upstreamowego
+`OverlapProvider` bezpośrednio. Działające pozostają ścieżki z własnym
+serializowalnym providerem i `PolarsBioBallistaLogicalCodec`.
 
 ## Wniosek architektoniczny
 
@@ -132,4 +162,5 @@ Szczegóły, instrukcje i porównanie z kodem oryginalnym są w `EXPERIMENTS.md`
 - Scope: tylko Parquet; API Pythona `polars-bio` jest poza zakresem.
 - E4-A i E5-B są symulacjami strategii upstream, nie patchami upstream.
 - Produkcyjne wdrożenie A/B wymaga zmian w `datafusion-bio-function-ranges`.
-
+- Ballista z branchu `main` nie jest pinem release'owym crates.io; dokładny
+  commit użyty w walidacji jest zapisany powyżej.

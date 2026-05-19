@@ -4,6 +4,32 @@ Ten plik gwarantuje, ze kazda wersja eksperymentu opisana w dokumentacji ma
 odpowiadajaca implementacje w repo. Wszystkie ponizsze wersje sa utrzymywane
 rownolegle jako material porownawczy.
 
+## Aktualny baseline DF53
+
+Walidacja z 2026-05-19 została wykonana na następującym stosie:
+
+- `polars-bio` branch `upgrade-datafusion-53-1`,
+  commit `bfc67d3d822040ddb2dfa949010dbb7ea00968cf`
+- `polars-bio` wskazuje DataFusion `53.1.0`, Arrow `58.3.0` i
+  `datafusion-bio-function-ranges`
+  `35a6a6e41c6212c8e031d3beb7f917591e589475`
+- POC używa Apache Ballista z `apache/datafusion-ballista` branch `main`,
+  commit `38ef6004f64b5aa14a5d8e8765d94f716b796fbc`
+- Ballista z GitHuba wymaga lokalnego `protoc` podczas pełnego buildu
+  (`cargo build --bins`)
+
+Potwierdzone komendy:
+
+```bash
+cargo check --bins
+./scripts/run-local-e1.sh
+./scripts/run-local-compare-overlap-modes.sh
+./scripts/run-local-e3.sh
+```
+
+Wynik: E1 przechodzi, E2/E4-A/E5-B zwracają identyczne tabele, a E3 nadal
+kończy się oczekiwanym błędem `LogicalExtensionCodec is not provided`.
+
 ## E1 - Toy UDTF bootstrap (`overlap_demo`)
 
 Cel:
@@ -91,7 +117,8 @@ Kod obecny w repo:
 
 Relacja do oryginalnego `polars-bio`:
 
-- To najblizsza funkcjonalnie wersja wzgledem `polars-bio/src/operation.rs`.
+- To najblizsza funkcjonalnie wersja wzgledem `polars-bio/src/operation.rs`
+  z branchu `upgrade-datafusion-53-1`.
 - Zachowuje semantyke overlap i kolumny `contig`, `pos_start`, `pos_end`.
 - Dodaje jedynie warstwe dystrybucyjna wymagana przez Balliste:
   serializowalny provider + `LogicalExtensionCodec`.
@@ -165,6 +192,8 @@ Mapa zmian funkcja-po-funkcji wzgledem `polars-bio/src/operation.rs`:
   jawnie odtworzona w `TableProvider::scan(...)` oraz `build_overlap_plan_from_paths(...)`.
 - Nowy element tylko dla trybu rozproszonego: `PolarsBioBallistaLogicalCodec` w `src/codec.rs`,
   ktory koduje i odtwarza providera na schedulerze i executorach.
+- POC korzysta z tego samego rewizyjnie źródła `datafusion-bio-function-ranges`,
+  które wskazuje aktualny branch `polars-bio` DF53.
 
 ## E4-A - Weryfikacja podejscia A (minimalny upstream refactor)
 
@@ -358,6 +387,12 @@ Oczekiwany wynik:
 - identyczna tabela wynikowa dla E2, E4-A i E5-B,
 - artefakty porownania w `target/ballista-compare/`.
 
+W walidacji DF53 z 2026-05-19 skrypt zakończył się komunikatem:
+
+```text
+[COMPARE] SUCCESS: E2, E4-A and E5-B returned identical tables.
+```
+
 ## E3 - Bezposredni upstream `OverlapProvider` (checkpoint regresyjny)
 
 Cel:
@@ -373,8 +408,8 @@ Kod obecny w repo:
 
 Relacja do oryginalnego `polars-bio`:
 
-- To prawie 1:1 translacja wywolania `OverlapProvider::new(...)` z
-  `polars-bio/src/operation.rs`.
+- To kontrolna translacja bezpośredniego upstreamowego `OverlapProvider`
+  z `polars-bio/src/operation.rs`.
 - W runtime ten eksperyment celowo pada na serializacji planu (`LogicalExtensionCodec
   is not provided`) i pozostaje trwalym testem regresyjnym.
 
@@ -422,8 +457,8 @@ Oczekiwany wynik:
 
 Co dodano wzgledem oryginalnego `polars-bio`:
 
-- Praktycznie zadnych zmian kodu logiki overlap — wywolanie `OverlapProvider::new(...)` jest
-  niemal 1:1 zgodne z `polars-bio/src/operation.rs`.
+- Praktycznie zadnych zmian kodu logiki overlap — provider upstream jest
+  rejestrowany bez serializowalnego adaptera.
 - Jedyna roznica strukturalna: zapytanie trafia przez zdalny `SessionContext` Ballisty zamiast
   lokalnego, co ujawnia brakujaca sciezke serializacji w upstream.
 - Dodano tryb `--provider-mode direct` w `src/bin/query.rs` oraz skrypt `scripts/run-local-e3.sh`

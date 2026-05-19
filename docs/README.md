@@ -8,6 +8,15 @@ Ten katalog zawiera tylko dokumenty zgodne z aktualnym zakresem `polars-bio-ball
 - `../EXPERIMENTS.md` - komplet instrukcji wykonania E1/E2/E3/E4-A/E5-B
 - `add-ballista-distributed-execution-poc/report.md` - raport koncowy POC, w tym analiza A/B i odniesienie do produkcji
 
+Dokumentacja zostala zaktualizowana dla walidacji DF53 z 2026-05-19:
+
+- `polars-bio` branch `upgrade-datafusion-53-1`
+- DataFusion `53.1.0`
+- Apache Ballista `main`
+  (`38ef6004f64b5aa14a5d8e8765d94f716b796fbc`)
+- `datafusion-bio-function-ranges`
+  `35a6a6e41c6212c8e031d3beb7f917591e589475`
+
 ## Zakres dokumentacji
 
 Repo utrzymuje piec eksperymentow:
